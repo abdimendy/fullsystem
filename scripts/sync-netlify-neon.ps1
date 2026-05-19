@@ -20,13 +20,14 @@ if (-not $dbUrl) {
 }
 
 Write-Host "Setting Netlify env DATABASE_URL (production)..." -ForegroundColor Cyan
-netlify env:set DATABASE_URL $dbUrl --context production
-netlify env:set DATABASE_URL $dbUrl --context deploy-preview
+$netlify = "npx --yes netlify-cli"
+Invoke-Expression "$netlify env:set DATABASE_URL '$dbUrl' --context production"
+Invoke-Expression "$netlify env:set DATABASE_URL '$dbUrl' --context deploy-preview"
 
 Write-Host "Deploying site..." -ForegroundColor Cyan
 Set-Location $Root
 npm run netlify-build
-netlify deploy --prod --build
+Invoke-Expression "$netlify deploy --prod --build"
 
 Write-Host ""
 Write-Host "Done. Test: https://yellowbooksystem.netlify.app/api/health" -ForegroundColor Green
