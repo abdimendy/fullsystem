@@ -199,7 +199,8 @@ async function proxyToBackend(event) {
           body: text,
         };
       }
-      if (method === 'GET' || method === 'HEAD') break;
+      // Render asleep or route missing — fall through to demo (login, etc.)
+      if (upstream.status === 404 || upstream.status >= 502) break;
       return json(upstream.status, { message: 'Backend error', status: upstream.status });
     } catch {
       if (attempt < 2) await sleep(3000);
