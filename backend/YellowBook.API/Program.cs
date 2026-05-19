@@ -106,6 +106,7 @@ builder.Services.AddCors(options =>
                 if (allowed.Contains(origin)) return true;
                 return origin.EndsWith(".loca.lt", StringComparison.OrdinalIgnoreCase)
                     || origin.EndsWith(".vercel.app", StringComparison.OrdinalIgnoreCase)
+                    || origin.EndsWith(".netlify.app", StringComparison.OrdinalIgnoreCase)
                     || origin.Contains("trycloudflare.com", StringComparison.OrdinalIgnoreCase)
                     || origin.Contains("loca.lt", StringComparison.OrdinalIgnoreCase)
                     || origin.Contains("onrender.com", StringComparison.OrdinalIgnoreCase);

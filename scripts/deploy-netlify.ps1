@@ -25,6 +25,12 @@ function Test-UrlOk($url, $timeoutSec = 15) {
 
 @{ apiUrl = '/api' } | ConvertTo-Json | Set-Content (Join-Path $root 'frontend\public\config.json') -Encoding UTF8
 
+Write-Host 'Waking Render API (database backend)...' -ForegroundColor Cyan
+& (Join-Path $root 'scripts\wake-render-api.ps1')
+if ($LASTEXITCODE -ne 0) {
+    Write-Host 'Continue anyway — Netlify will use demo until Render is up.' -ForegroundColor Yellow
+}
+
 Write-Host 'Installing + building frontend...' -ForegroundColor Cyan
 npm ci --prefix frontend 2>$null
 if ($LASTEXITCODE -ne 0) { npm install --prefix frontend }

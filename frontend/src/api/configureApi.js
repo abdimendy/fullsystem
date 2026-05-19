@@ -82,12 +82,27 @@ export async function configureApi() {
   api.defaults.baseURL = baseURL;
   console.info('[YellowBook API] baseURL =', baseURL);
 
+  const isDemoHealth = (data) => {
+    const p = String(data?.provider || '').toLowerCase();
+    return (
+      p.includes('demo') ||
+      p.includes('static') ||
+      p.includes('netlify-demo') ||
+      p.includes('vercel-static')
+    );
+  };
+
   const tryHealth = async (label, base) => {
     const prev = api.defaults.baseURL;
     api.defaults.baseURL = base;
     try {
-      const { data } = await api.get('/health');
+      const { data } = await api.get('/health', { timeout: 45000 });
       if (data?.status === 'healthy' || data?.status === 'degraded') {
+        if (isHostedWithRelativeApi() && isDemoHealth(data)) {
+          console.info('[YellowBook API] demo/static only at', label, '— trying live Render API…');
+          api.defaults.baseURL = prev;
+          return false;
+        }
         console.info('[YellowBook API] health OK', label, data?.status, data?.provider || '');
         const t = localStorage.getItem('yellowbook_token');
         if (t?.startsWith('offline.') || t?.startsWith('dev.') || t?.startsWith('demo.')) {
@@ -107,10 +122,10 @@ export async function configureApi() {
 
   let live = await tryHealth('primary', baseURL);
 
-  if (!live && isHostedWithRelativeApi() && baseURL === '/api') {
+  if (!live && isHostedWithRelativeApi()) {
     const renderBase = normalizeApiUrl(DEFAULT_PRODUCTION_API_ORIGIN);
-    if (renderBase && renderBase !== '/api') {
-      live = await tryHealth('render', renderBase);
+    if (renderBase && renderBase !== baseURL) {
+      live = await tryHealth('render-live', renderBase);
       if (live) {
         baseURL = renderBase;
         api.defaults.baseURL = baseURL;

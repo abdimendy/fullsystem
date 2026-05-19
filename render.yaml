@@ -20,9 +20,11 @@ services:
           property: connectionString
       - key: ENABLE_SWAGGER
         value: "true"
-      # e.g. https://yellowbook-live.vercel.app (also allowed via *.vercel.app in Program.cs)
+      # Netlify + Vercel (also allowed via *.netlify.app / *.vercel.app in Program.cs)
       - key: FRONTEND_URL
-        sync: false
+        value: https://yellowbooksystem.netlify.app
+      - key: Cors__AllowedOrigins
+        value: https://yellowbooksystem.netlify.app,https://fullsystem-7med.vercel.app
       - key: Jwt__Key
         generateValue: true
       - key: Jwt__Issuer

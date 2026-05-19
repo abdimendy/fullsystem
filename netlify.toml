@@ -16,6 +16,10 @@
 [context.deploy-preview.environment]
   BACKEND_URL = "https://yellowbook-api.onrender.com"
 
+[functions]
+  [functions.api]
+    timeout = 26
+
 [[redirects]]
   from = "/favicon.ico"
   to = "/favicon.svg"

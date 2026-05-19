@@ -156,6 +156,15 @@ function handleDemo(event) {
   return json(404, { message: 'Not found', path: pathname });
 }
 
+function requestBody(event) {
+  if (!event.body) return undefined;
+  const method = (event.httpMethod || 'GET').toUpperCase();
+  if (method === 'GET' || method === 'HEAD') return undefined;
+  return event.isBase64Encoded ? Buffer.from(event.body, 'base64') : event.body;
+}
+
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+
 async function proxyToBackend(event) {
   const backend = (process.env.BACKEND_URL || '').trim().replace(/\/$/, '');
   if (!backend) return null;
@@ -165,33 +174,38 @@ async function proxyToBackend(event) {
   const qs = sp.toString();
   const target = `${backend}/api${pathname}${qs ? `?${qs}` : ''}`;
   const method = (event.httpMethod || 'GET').toUpperCase();
+  const body = requestBody(event);
 
   const headers = { accept: 'application/json' };
   if (event.headers?.authorization) headers.authorization = event.headers.authorization;
   if (event.headers?.['content-type']) headers['content-type'] = event.headers['content-type'];
 
-  try {
-    const upstream = await fetch(target, {
-      method,
-      headers,
-      body: method !== 'GET' && method !== 'HEAD' && event.body ? event.body : undefined,
-    });
-    const text = await upstream.text();
-    if (upstream.ok) {
-      return {
-        statusCode: upstream.status,
-        headers: {
-          'content-type': upstream.headers.get('content-type') || 'application/json',
-          'access-control-allow-origin': '*',
-        },
-        body: text,
-      };
+  for (let attempt = 0; attempt < 3; attempt++) {
+    try {
+      const upstream = await fetch(target, {
+        method,
+        headers,
+        body,
+        signal: AbortSignal.timeout(25000),
+      });
+      const text = await upstream.text();
+      if (upstream.ok) {
+        return {
+          statusCode: upstream.status,
+          headers: {
+            'content-type': upstream.headers.get('content-type') || 'application/json',
+            'access-control-allow-origin': '*',
+          },
+          body: text,
+        };
+      }
+      if (method === 'GET' || method === 'HEAD') break;
+      return json(upstream.status, { message: 'Backend error', status: upstream.status });
+    } catch {
+      if (attempt < 2) await sleep(3000);
     }
-    if (method === 'GET' || method === 'HEAD') return null;
-    return json(upstream.status, { message: 'Backend error', status: upstream.status });
-  } catch {
-    return null;
   }
+  return null;
 }
 
 export async function handler(event) {
