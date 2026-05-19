@@ -20,7 +20,7 @@ export function toNetlifyEvent(req, rawBody, subPathOverride) {
 
   const qs = new URLSearchParams(url.search);
   for (const [key, value] of Object.entries(req.query || {})) {
-    if (key === 'path' || key === 'id') continue;
+    if (key === 'path' || key === 'id' || key === '__path') continue;
     if (Array.isArray(value)) value.forEach((v) => qs.append(key, v));
     else if (value != null) qs.set(key, value);
   }

@@ -7,7 +7,7 @@
     "dev": "npx vite",
     "build": "npx vite build",
     "predev": "node scripts/extract-classes.mjs",
-    "prebuild": "node scripts/extract-classes.mjs && node scripts/write-api-static.mjs && node scripts/generate-pwa-icons.mjs",
+    "prebuild": "node scripts/extract-classes.mjs && node scripts/write-api-static.mjs",
     "lint": "eslint .",
     "preview": "vite preview"
   },
@@ -33,7 +33,6 @@
     "globals": "^17.6.0",
     "sharp": "^0.34.5",
     "tailwindcss": "^4.3.0",
-    "vite": "^8.0.12",
-    "vite-plugin-pwa": "^1.3.0"
+    "vite": "^8.0.12"
   }
 }

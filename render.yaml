@@ -17,9 +17,9 @@ services:
       - key: ENABLE_SWAGGER
         value: "true"
       - key: FRONTEND_URL
-        value: https://yellowbooksystem.netlify.app
+        value: https://fullsystem-7med.vercel.app
       - key: Cors__AllowedOrigins
-        value: https://yellowbooksystem.netlify.app,https://fullsystem-7med.vercel.app
+        value: https://fullsystem-7med.vercel.app,https://yellowbooksystem.netlify.app
       - key: Jwt__Key
         generateValue: true
       - key: Jwt__Issuer
