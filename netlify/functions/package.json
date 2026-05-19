@@ -1,0 +1,10 @@
+{
+  "name": "yellowbook-netlify-api",
+  "private": true,
+  "type": "module",
+  "dependencies": {
+    "@neondatabase/serverless": "^0.10.4",
+    "bcryptjs": "^2.4.3",
+    "jose": "^5.9.6"
+  }
+}

@@ -1,4 +1,6 @@
-/** Netlify serverless /api — demo data, or proxy to BACKEND_URL (Render) when set. */
+/** Netlify serverless /api — Neon (DATABASE_URL), Render proxy, or demo fallback. */
+
+import { handleNeon } from './neon-api.mjs';
 
 const U = (id) => `https://images.unsplash.com/photo-${id}?w=800&h=400&fit=crop&q=80`;
 
@@ -251,6 +253,14 @@ async function proxyToBackend(event) {
   return null;
 }
 
+const neonHelpers = {
+  json,
+  empty204,
+  getPathname,
+  getSearchParams,
+  parseBody,
+};
+
 export async function handler(event) {
   if (event.httpMethod === 'OPTIONS') {
     return {
@@ -262,6 +272,11 @@ export async function handler(event) {
       },
       body: '',
     };
+  }
+
+  if (process.env.DATABASE_URL?.trim()) {
+    const neonRes = await handleNeon(event, neonHelpers);
+    if (neonRes) return neonRes;
   }
 
   const proxied = await proxyToBackend(event);

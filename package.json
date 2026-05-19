@@ -8,7 +8,8 @@
   "scripts": {
     "build": "npm install --prefix frontend && npm run build --prefix frontend",
     "vercel-build": "npm install --prefix frontend && npm run build --prefix frontend",
-    "netlify-build": "npm install --prefix frontend && npm run build --prefix frontend",
+    "netlify-build": "npm install --prefix netlify/functions && npm install --prefix frontend && npm run build --prefix frontend",
+    "sync-netlify-neon": "powershell -NoProfile -ExecutionPolicy Bypass -File ./scripts/sync-netlify-neon.ps1",
     "setup-render": "powershell -NoProfile -ExecutionPolicy Bypass -File ./scripts/setup-render.ps1"
   }
 }

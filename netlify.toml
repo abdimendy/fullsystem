@@ -9,12 +9,17 @@
 [build.environment]
   NODE_VERSION = "20"
 
-# Proxy all /api to Render (.NET + Neon) — same data as localhost Vite proxy
+# Live API: set DATABASE_URL in Netlify (Neon) — same DB as localhost. No Render/card needed.
+# Optional: BACKEND_URL only if you deploy .NET API elsewhere.
 [context.production.environment]
-  BACKEND_URL = "https://yellowbook-api.onrender.com"
+  JWT_KEY = "YellowBook-Super-Secret-Key-Change-In-Production-2026!"
+  AdminUser__Username = "admin"
+  AdminUser__Password = "Admin@123"
 
 [context.deploy-preview.environment]
-  BACKEND_URL = "https://yellowbook-api.onrender.com"
+  JWT_KEY = "YellowBook-Super-Secret-Key-Change-In-Production-2026!"
+  AdminUser__Username = "admin"
+  AdminUser__Password = "Admin@123"
 
 [functions]
   [functions.api]

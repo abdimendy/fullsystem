@@ -84,10 +84,12 @@ export async function configureApi() {
 
   const isDemoHealth = (data) => {
     const p = String(data?.provider || '').toLowerCase();
+    if (p.includes('neon') || p.includes('npgsql') || p.includes('render-live')) return false;
     return (
       p.includes('demo') ||
       p.includes('static') ||
       p.includes('netlify-demo') ||
+      p.includes('netlify-proxy') ||
       p.includes('vercel-static')
     );
   };
@@ -138,7 +140,7 @@ export async function configureApi() {
     const hint = import.meta.env.DEV
       ? 'Run .\\START.ps1 (or .\\scripts\\start-api-neon.ps1) for login + Neon database.'
       : isHostedWithRelativeApi()
-        ? 'Set BACKEND_URL on host (Netlify env / Vercel) to https://yellowbook-api.onrender.com for live DB.'
+        ? 'Set DATABASE_URL on Netlify (Site settings → Environment) from your .env Neon URL.'
         : 'For Neon DB, run .\\scripts\\sync-vercel-live.ps1';
     console.info(`[YellowBook API] Using bundled directory data. ${hint}`);
   } else if (!live) {
