@@ -5,6 +5,8 @@
   "dependencies": {
     "@neondatabase/serverless": "^0.10.4",
     "bcryptjs": "^2.4.3",
-    "jose": "^5.9.6"
+    "cloudinary": "^2.5.1",
+    "jose": "^5.9.6",
+    "lambda-multipart-parser": "^1.0.1"
   }
 }

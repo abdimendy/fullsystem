@@ -49,7 +49,7 @@ export default function AdminBusinesses() {
   const load = async () => {
     setLoading(true);
     try {
-      const [biz, cats] = await Promise.all([businessApi.getAll(), categoryApi.getAll()]);
+      const [biz, cats] = await Promise.all([businessApi.getAll(true), categoryApi.getAll()]);
       setBusinesses(ensureArray(biz.data));
       setCategories(ensureArray(cats.data));
     } catch (err) {

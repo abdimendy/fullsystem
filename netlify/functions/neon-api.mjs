@@ -3,6 +3,7 @@
 import { neon } from '@neondatabase/serverless';
 import bcrypt from 'bcryptjs';
 import { SignJWT, jwtVerify } from 'jose';
+import { handleUpload } from './neon-upload.mjs';
 
 const JWT_DEFAULT = 'YellowBook-Super-Secret-Key-Change-In-Production-2026!';
 
@@ -147,6 +148,44 @@ async function verifyAuth(event) {
   }
 }
 
+async function categoryExists(db, categoryId) {
+  const rows = await db`SELECT "Id" FROM "Categories" WHERE "Id" = ${Number(categoryId)} LIMIT 1`;
+  return !!rows[0];
+}
+
+async function insertBusiness(db, body, { approved }) {
+  const categoryId = Number(body.categoryId);
+  if (!categoryId || !(await categoryExists(db, categoryId))) {
+    return { error: 'Selected category does not exist.', status: 400 };
+  }
+  const rows = await db`
+    INSERT INTO "Businesses" (
+      "Name", "Phone", "Email", "Address", "Description", "CategoryId", "LogoUrl", "Website",
+      "City", "Rating", "IsFeatured", "IsApproved", "ImageUrlsJson", "OpeningHoursJson",
+      "Latitude", "Longitude", "CreatedAt"
+    ) VALUES (
+      ${String(body.name ?? '').trim()},
+      ${String(body.phone ?? '').trim()},
+      ${String(body.email ?? '').trim()},
+      ${String(body.address ?? '').trim()},
+      ${body.description?.trim() || null},
+      ${categoryId},
+      ${body.logoUrl?.trim() || null},
+      ${body.website?.trim() || null},
+      ${body.city?.trim() || 'Mogadishu'},
+      ${Number(body.rating) || 4.5},
+      ${!!body.isFeatured},
+      ${!!approved},
+      ${body.imageUrls ? JSON.stringify(body.imageUrls) : null},
+      ${body.openingHours ? JSON.stringify(body.openingHours) : null},
+      ${body.latitude ?? null},
+      ${body.longitude ?? null},
+      NOW()
+    ) RETURNING "Id"`;
+  const full = await selectBusinesses(db, { id: rows[0].Id });
+  return { business: mapBusiness(full[0]) };
+}
+
 async function selectBusinesses(db, { approvedOnly = true, featured = false, limit, id, pending = false } = {}) {
   if (id != null) {
     const rows = await db(
@@ -180,6 +219,11 @@ export async function handleNeon(event, { json, empty204, getPathname, getSearch
   const body = parseBody(event);
 
   try {
+    const uploadRes = await handleUpload(event, { json, verifyAuth, getPathname });
+    if (uploadRes) return uploadRes;
+
+    const bizId = pathname.match(/^\/?businesses\/(\d+)$/);
+
     if (method === 'GET' && pathname === '/health') {
       await db`SELECT 1`;
       return json(200, { status: 'healthy', database: true, provider: 'netlify-neon' });
@@ -275,7 +319,6 @@ export async function handleNeon(event, { json, empty204, getPathname, getSearch
       });
     }
 
-    const bizId = pathname.match(/^\/?businesses\/(\d+)$/);
     if (method === 'GET' && bizId) {
       const rows = await selectBusinesses(db, { id: Number(bizId[1]) });
       if (!rows[0]) return json(404, { message: 'Business not found.' });
@@ -415,34 +458,58 @@ export async function handleNeon(event, { json, empty204, getPathname, getSearch
       return json(200, mapBusiness(rows[0]));
     }
 
+    if (method === 'POST' && pathname === '/businesses') {
+      if (!(await verifyAuth(event))) return json(401, { message: 'Unauthorized' });
+      const result = await insertBusiness(db, body, { approved: true });
+      if (result.error) return json(result.status, { message: result.error });
+      return json(201, result.business);
+    }
+
+    if (method === 'PUT' && bizId) {
+      if (!(await verifyAuth(event))) return json(401, { message: 'Unauthorized' });
+      const id = Number(bizId[1]);
+      const existing = await db`SELECT "Id" FROM "Businesses" WHERE "Id" = ${id} LIMIT 1`;
+      if (!existing[0]) return json(404, { message: 'Business not found.' });
+      const categoryId = Number(body.categoryId);
+      if (!categoryId || !(await categoryExists(db, categoryId))) {
+        return json(400, { message: 'Selected category does not exist.' });
+      }
+      await db`
+        UPDATE "Businesses" SET
+          "Name" = ${String(body.name ?? '').trim()},
+          "Phone" = ${String(body.phone ?? '').trim()},
+          "Email" = ${String(body.email ?? '').trim()},
+          "Address" = ${String(body.address ?? '').trim()},
+          "Description" = ${body.description?.trim() || null},
+          "CategoryId" = ${categoryId},
+          "LogoUrl" = ${body.logoUrl?.trim() || null},
+          "Website" = ${body.website?.trim() || null},
+          "City" = ${body.city?.trim() || 'Mogadishu'},
+          "Rating" = ${Number(body.rating) || 4.5},
+          "IsFeatured" = ${!!body.isFeatured},
+          "IsApproved" = ${body.isApproved !== false},
+          "ImageUrlsJson" = ${body.imageUrls ? JSON.stringify(body.imageUrls) : null},
+          "OpeningHoursJson" = ${body.openingHours ? JSON.stringify(body.openingHours) : null},
+          "Latitude" = ${body.latitude ?? null},
+          "Longitude" = ${body.longitude ?? null}
+        WHERE "Id" = ${id}`;
+      const rows = await selectBusinesses(db, { id });
+      return json(200, mapBusiness(rows[0]));
+    }
+
+    if (method === 'DELETE' && bizId) {
+      if (!(await verifyAuth(event))) return json(401, { message: 'Unauthorized' });
+      const id = Number(bizId[1]);
+      const rows = await db`DELETE FROM "Businesses" WHERE "Id" = ${id} RETURNING "Id"`;
+      if (!rows[0]) return json(404, { message: 'Business not found.' });
+      return { statusCode: 204, headers: { 'access-control-allow-origin': '*' }, body: '' };
+    }
+
     if (method === 'POST' && pathname === '/businesses/submit') {
       if (body.companyWebsite) return json(400, { message: 'Invalid submission.' });
-      const rows = await db`
-        INSERT INTO "Businesses" (
-          "Name", "Phone", "Email", "Address", "Description", "CategoryId", "LogoUrl", "Website",
-          "City", "Rating", "IsFeatured", "IsApproved", "ImageUrlsJson", "OpeningHoursJson",
-          "Latitude", "Longitude", "CreatedAt"
-        ) VALUES (
-          ${String(body.name ?? '').trim()},
-          ${String(body.phone ?? '').trim()},
-          ${String(body.email ?? '').trim()},
-          ${String(body.address ?? '').trim()},
-          ${body.description?.trim() || null},
-          ${Number(body.categoryId)},
-          ${body.logoUrl?.trim() || null},
-          ${body.website?.trim() || null},
-          ${body.city?.trim() || 'Mogadishu'},
-          ${Number(body.rating) || 4.5},
-          ${!!body.isFeatured},
-          false,
-          ${body.imageUrls ? JSON.stringify(body.imageUrls) : null},
-          ${body.openingHours ? JSON.stringify(body.openingHours) : null},
-          ${body.latitude ?? null},
-          ${body.longitude ?? null},
-          NOW()
-        ) RETURNING "Id"`;
-      const full = await selectBusinesses(db, { id: rows[0].Id });
-      return json(202, mapBusiness(full[0]));
+      const result = await insertBusiness(db, body, { approved: false });
+      if (result.error) return json(result.status, { message: result.error });
+      return json(202, result.business);
     }
   } catch (err) {
     console.error('[neon-api]', err);
