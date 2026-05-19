@@ -102,7 +102,13 @@ function handleDemo(event) {
   const sp = getSearchParams(event);
   const method = (event.httpMethod || 'GET').toUpperCase();
 
-  if (method === 'GET' && pathname === '/health') return json(200, { status: 'healthy', database: true, provider: 'netlify-demo' });
+  if (method === 'GET' && pathname === '/health') {
+    return json(200, {
+      status: 'healthy',
+      database: true,
+      provider: process.env.BACKEND_URL ? 'netlify-proxy' : 'netlify-demo',
+    });
+  }
   if (method === 'GET' && pathname === '/categories') return json(200, demoCategories);
   if (method === 'GET' && pathname === '/businesses') return json(200, demoBusinessList);
   if (method === 'GET' && pathname === '/businesses/featured') return json(200, demoBusinessList.slice(0, Number(sp.get('count')) || 6));

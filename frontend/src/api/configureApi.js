@@ -90,7 +90,7 @@ export async function configureApi() {
       if (data?.status === 'healthy' || data?.status === 'degraded') {
         console.info('[YellowBook API] health OK', label, data?.status, data?.provider || '');
         const t = localStorage.getItem('yellowbook_token');
-        if (t?.startsWith('offline.') || t?.startsWith('dev.')) {
+        if (t?.startsWith('offline.') || t?.startsWith('dev.') || t?.startsWith('demo.')) {
           localStorage.removeItem('yellowbook_token');
           localStorage.removeItem('yellowbook_user');
           localStorage.removeItem('yellowbook_expires');
@@ -122,7 +122,9 @@ export async function configureApi() {
     api.defaults.useBundledPublicApi = true;
     const hint = import.meta.env.DEV
       ? 'Run .\\START.ps1 (or .\\scripts\\start-api-neon.ps1) for login + Neon database.'
-      : 'For Neon DB, run .\\scripts\\sync-vercel-live.ps1';
+      : isHostedWithRelativeApi()
+        ? 'Set BACKEND_URL on host (Netlify env / Vercel) to https://yellowbook-api.onrender.com for live DB.'
+        : 'For Neon DB, run .\\scripts\\sync-vercel-live.ps1';
     console.info(`[YellowBook API] Using bundled directory data. ${hint}`);
   } else if (!live) {
     console.warn('[YellowBook API] health check failed — per-request demo fallback may apply.');

@@ -1,5 +1,5 @@
-# Yellow Book — Netlify (same layout as localhost:5175)
-# Connect repo root; do NOT set base directory to frontend/ only.
+# Yellow Book — Netlify (same as localhost:5175 → /api → live backend)
+# Base directory: EMPTY (repo root). Publish: frontend/dist (from build).
 
 [build]
   command = "npm run build"
@@ -9,49 +9,24 @@
 [build.environment]
   NODE_VERSION = "20"
 
-# Static API JSON (fast, no cold start)
+# Proxy all /api to Render (.NET + Neon) — same data as localhost Vite proxy
+[context.production.environment]
+  BACKEND_URL = "https://yellowbook-api.onrender.com"
+
+[context.deploy-preview.environment]
+  BACKEND_URL = "https://yellowbook-api.onrender.com"
+
 [[redirects]]
   from = "/favicon.ico"
   to = "/favicon.svg"
   status = 200
 
-[[redirects]]
-  from = "/api/health"
-  to = "/_data/health.json"
-  status = 200
-
-[[redirects]]
-  from = "/api/categories"
-  to = "/_data/categories.json"
-  status = 200
-
-[[redirects]]
-  from = "/api/businesses/featured"
-  to = "/_data/featured.json"
-  status = 200
-
-[[redirects]]
-  from = "/api/businesses/search"
-  to = "/_data/search.json"
-  status = 200
-
-[[redirects]]
-  from = "/api/dashboard/stats"
-  to = "/_data/stats.json"
-  status = 200
-
-[[redirects]]
-  from = "/api/businesses"
-  to = "/_data/businesses.json"
-  status = 200
-
-# Dynamic /api (demo + optional BACKEND_URL proxy to Render)
+# All API traffic → serverless proxy (BACKEND_URL) or demo fallback
 [[redirects]]
   from = "/api/*"
   to = "/.netlify/functions/api/:splat"
   status = 200
 
-# React Router SPA
 [[redirects]]
   from = "/*"
   to = "/index.html"

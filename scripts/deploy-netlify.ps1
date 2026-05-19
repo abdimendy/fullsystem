@@ -6,6 +6,7 @@ $root = (Join-Path $PSScriptRoot '..') | Resolve-Path
 Set-Location $root
 
 $RenderApi = 'https://yellowbook-api.onrender.com'
+$SiteUrl = 'https://yellowbooksystem.netlify.app'
 $GitRepo = 'https://github.com/abdimendy/fullsystem'
 
 function Test-GitRemote {
@@ -59,17 +60,18 @@ if ($LASTEXITCODE -ne 0) {
 $siteUrl = ($deployOut | Select-String -Pattern 'https://[a-z0-9-]+\.netlify\.app' -AllMatches | Select-Object -Last 1).Matches[0].Value
 if (-not $siteUrl) { $siteUrl = ($deployOut | Select-String -Pattern 'Website URL:\s*(https://\S+)' | ForEach-Object { $_.Matches[0].Groups[1].Value }) }
 
-if (Test-UrlOk "$RenderApi/api/health" 45) {
-    Write-Host 'Render API up — set BACKEND_URL in Netlify → Site settings → Environment:' -ForegroundColor Green
-    Write-Host "  BACKEND_URL = $RenderApi" -ForegroundColor White
+if (Test-UrlOk "$RenderApi/api/health" 90) {
+    Write-Host 'Render API up — BACKEND_URL is in netlify.toml (live DB like localhost).' -ForegroundColor Green
     npx --yes netlify-cli env:set BACKEND_URL $RenderApi --context production 2>$null
-    npx --yes netlify-cli deploy --prod 2>&1 | Out-Null
+} else {
+    Write-Host 'Render API sleeping — first request may take ~60s (cold start).' -ForegroundColor Yellow
 }
 
 Write-Host ''
 Write-Host '========================================' -ForegroundColor Green
 Write-Host '  ONLINE (Netlify — like localhost:5175):' -ForegroundColor Green
 if ($siteUrl) { Write-Host "  $siteUrl" -ForegroundColor Green }
+Write-Host "  $SiteUrl" -ForegroundColor Green
 Write-Host '  Login: admin / Admin@123 (demo) or live API if BACKEND_URL set' -ForegroundColor Yellow
 Write-Host '========================================' -ForegroundColor Green
 
