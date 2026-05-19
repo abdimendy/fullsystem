@@ -50,17 +50,42 @@ function json(status, data) {
 
 function getPathname(event) {
   const splat = event.pathParameters?.splat ?? event.pathParameters?.proxy;
-  if (splat) return `/${String(splat).replace(/^\/+/, '')}`;
+  if (splat != null && splat !== '') {
+    const p = String(splat).replace(/^\/+/, '');
+    return p.startsWith('api/') ? `/${p.slice(4)}` : `/${p}`;
+  }
   const raw = event.rawUrl || event.path || '';
   try {
     const pathname = raw.startsWith('http') ? new URL(raw).pathname : raw;
-    const fromFn = pathname.match(/\/\.netlify\/functions\/api(\/.*)?$/);
+    const fromFn = pathname.match(/\/\.netlify\/functions\/api(\/.*)?$/i);
     if (fromFn) return fromFn[1] || '/';
-    return pathname.replace(/^\/api/, '') || '/';
+    const fromApi = pathname.replace(/^\/api/i, '') || '/';
+    return fromApi.startsWith('/') ? fromApi : `/${fromApi}`;
   } catch {
     return '/';
   }
 }
+
+function empty204() {
+  return {
+    statusCode: 204,
+    headers: { 'access-control-allow-origin': '*' },
+    body: '',
+  };
+}
+
+const demoAnalyticsSummary = {
+  totalPageViews: 128,
+  totalBusinessViews: 64,
+  totalSearches: 42,
+  unreadMessages: 0,
+  pendingBusinesses: 0,
+  popularBusinesses: demoBusinessList.slice(0, 5).map((b, i) => ({
+    businessId: b.id,
+    name: b.name,
+    views: 20 - i,
+  })),
+};
 
 function parseBody(event) {
   if (!event.body) return {};
@@ -119,6 +144,13 @@ function handleDemo(event) {
   if (method === 'GET' && pathname === '/reviews') return json(200, demoReviews);
   if (method === 'GET' && pathname === '/businesses/pending') return json(200, []);
 
+  if (method === 'POST' && pathname === '/analytics/track') return empty204();
+  if (method === 'GET' && pathname === '/analytics/summary') return json(200, demoAnalyticsSummary);
+
+  if (method === 'POST' && pathname === '/contact') return json(201, { id: 1, message: 'Message received.' });
+  if (method === 'GET' && pathname === '/contact') return json(200, []);
+  if (method === 'GET' && pathname === '/upload/status') return json(200, { cloudinary: false, local: true });
+
   if (method === 'POST' && pathname === '/auth/login') {
     const body = parseBody(event);
     const user = String(body.username ?? body.Username ?? '').trim().toLowerCase();
@@ -144,10 +176,14 @@ function handleDemo(event) {
     return json(401, { message: 'Unauthorized' });
   }
 
-  const biz = pathname.match(/^\/businesses\/(\d+)$/);
+  const biz = pathname.match(/^\/?businesses\/(\d+)$/);
   if (method === 'GET' && biz) {
     const b = demoBusinessList.find((x) => x.id === Number(biz[1]));
-    return json(b ? 200 : 404, b || { message: 'Business not found.' });
+    return json(b ? 200 : 404, b || { message: 'Business not found.', path: pathname });
+  }
+
+  if (method === 'POST' && pathname.match(/^\/?businesses\/\d+\/approve$/)) {
+    return json(200, { message: 'Approved (demo).' });
   }
 
   const rev = pathname.match(/^\/reviews\/business\/(\d+)$/);
@@ -199,8 +235,14 @@ async function proxyToBackend(event) {
           body: text,
         };
       }
-      // Render asleep or route missing — fall through to demo (login, etc.)
-      if (upstream.status === 404 || upstream.status >= 502) break;
+      // Render asleep / unauthorized / missing route — fall through to demo for GET
+      if (method === 'GET' || method === 'HEAD') {
+        if (upstream.status === 401 || upstream.status === 403 || upstream.status === 404 || upstream.status >= 502) {
+          break;
+        }
+      } else if (upstream.status === 404 || upstream.status >= 502) {
+        break;
+      }
       return json(upstream.status, { message: 'Backend error', status: upstream.status });
     } catch {
       if (attempt < 2) await sleep(3000);

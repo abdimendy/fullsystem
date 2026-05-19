@@ -95,6 +95,23 @@ export function getDemoResponse(config) {
 
   if (path === '/businesses/pending') return [];
 
+  if (path === '/analytics/summary') {
+    return {
+      totalPageViews: 0,
+      totalBusinessViews: 0,
+      totalSearches: 0,
+      unreadMessages: 0,
+      pendingBusinesses: 0,
+      popularBusinesses: [],
+    };
+  }
+
+  const bizMatch = path.match(/^\/businesses\/(\d+)$/);
+  if (bizMatch) {
+    const id = Number(bizMatch[1]);
+    return demoBusinessList.find((b) => b.id === id) ?? null;
+  }
+
   return null;
 }
 
@@ -111,7 +128,9 @@ function isPublicGetUrl(url) {
     path === '/dashboard' ||
     path === '/health' ||
     path === '/payments' ||
-    path === '/businesses/pending'
+    path === '/businesses/pending' ||
+    path === '/analytics/summary' ||
+    /^\/businesses\/\d+$/.test(path)
   );
 }
 
