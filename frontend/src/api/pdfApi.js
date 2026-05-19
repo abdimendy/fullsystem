@@ -2,7 +2,7 @@ import api from './axiosInstance';
 import { blobErrorMessage, downloadBlob } from '../utils/downloadBlob';
 
 async function fetchPdf(path, filename) {
-  const { data, headers } = await api.get(path, { responseType: 'blob' });
+  const { data, headers } = await api.get(path, { responseType: 'blob', timeout: 60000 });
   const type = data?.type || headers?.['content-type'] || '';
   if (!type.includes('pdf')) {
     const message = await blobErrorMessage(data, 'Could not generate PDF');
@@ -22,4 +22,6 @@ export const pdfApi = {
     const q = qs.toString();
     return fetchPdf(`/pdf/report${q ? `?${q}` : ''}`, 'yellowbook-directory.pdf');
   },
+  /** Admin dashboard — full directory report PDF */
+  downloadReport: () => fetchPdf('/pdf/report', 'yellowbook-report.pdf'),
 };
