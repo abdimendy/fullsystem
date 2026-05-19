@@ -2,7 +2,7 @@
  * Export Neon DB → frontend/public/_data/live/*.json
  * Used at Netlify build so GET /api works even when function quota is exceeded.
  */
-import { mkdirSync, writeFileSync } from 'fs';
+import { mkdirSync, readFileSync, writeFileSync } from 'fs';
 import { dirname, join } from 'path';
 import { fileURLToPath } from 'url';
 import { neon } from '@neondatabase/serverless';
@@ -151,7 +151,24 @@ try {
     write(`business-${b.id}.json`, b);
   }
 
-  console.log(`[export-neon-static] wrote ${mapped.length} businesses to _data/live/`);
+  const publicData = join(root, 'frontend', 'public', '_data');
+  for (const name of [
+    'health.json',
+    'categories.json',
+    'businesses.json',
+    'featured.json',
+    'payments.json',
+    'pending.json',
+    'search.json',
+    'stats.json',
+  ]) {
+    writeFileSync(join(publicData, name), readFileSync(join(outDir, name)));
+  }
+  for (const b of mapped) {
+    writeFileSync(join(publicData, `business-${b.id}.json`), readFileSync(join(outDir, `business-${b.id}.json`)));
+  }
+
+  console.log(`[export-neon-static] wrote ${mapped.length} businesses to _data/live/ and public/_data/`);
 } catch (err) {
   console.error('[export-neon-static] failed:', err.message || err);
   process.exit(1);
