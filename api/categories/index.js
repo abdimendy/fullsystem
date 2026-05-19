@@ -1,4 +1,4 @@
-import { apiConfig, runVercelApi } from './_vercel.mjs';
+import { apiConfig, runVercelApi } from '../_vercel.mjs';
 
 export const config = apiConfig;
 
