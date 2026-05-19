@@ -99,7 +99,7 @@ export async function configureApi() {
     const prev = api.defaults.baseURL;
     api.defaults.baseURL = base;
     try {
-      const timeout = import.meta.env.DEV ? 4000 : 45000;
+      const timeout = import.meta.env.DEV ? 10000 : 45000;
       const { data } = await api.get('/health', { timeout });
       if (data?.status === 'healthy' || data?.status === 'degraded') {
         if (isHostedWithRelativeApi() && isDemoHealth(data)) {
@@ -127,10 +127,10 @@ export async function configureApi() {
   let live = false;
   if (import.meta.env.DEV && baseURL === '/api') {
     console.info('[YellowBook API] Waiting for local API (http://localhost:5261)…');
-    for (let attempt = 0; attempt < 25; attempt++) {
+    for (let attempt = 0; attempt < 20; attempt++) {
       live = await tryHealth(attempt === 0 ? 'primary' : `local-retry-${attempt}`, baseURL);
       if (live) break;
-      await new Promise((r) => setTimeout(r, 1200));
+      await new Promise((r) => setTimeout(r, 800));
     }
   } else {
     live = await tryHealth('primary', baseURL);

@@ -111,6 +111,30 @@ export default function Login() {
               {loading ? t('login.signingIn') : t('login.signIn')}
             </button>
           </form>
+
+          {import.meta.env.DEV && (
+            <div className="mt-5 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 dark:border-amber-700/40 dark:bg-amber-950/30">
+              <p className="text-xs font-bold uppercase tracking-widest text-amber-700 dark:text-amber-400">
+                Local Dev Credentials
+              </p>
+              <div className="mt-1.5 flex items-center justify-between gap-3">
+                <div className="space-y-0.5 text-sm text-amber-900 dark:text-amber-200">
+                  <p><span className="font-semibold">Username:</span> admin</p>
+                  <p><span className="font-semibold">Password:</span> Admin@123</p>
+                </div>
+                <button
+                  type="button"
+                  className="shrink-0 rounded-lg border border-amber-300 bg-amber-100 px-3 py-1.5 text-xs font-bold text-amber-900 transition hover:bg-amber-200 dark:border-amber-600 dark:bg-amber-900/40 dark:text-amber-200 dark:hover:bg-amber-900/70"
+                  onClick={() => {
+                    setUsername('admin');
+                    setPassword('Admin@123');
+                  }}
+                >
+                  Fill In
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       </motion.div>
     </motion.div>

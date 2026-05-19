@@ -48,7 +48,11 @@ function applyNetlifyResponse(res, result) {
   if (!res.getHeader('access-control-allow-origin')) {
     res.setHeader('access-control-allow-origin', '*');
   }
-  res.end(result.body ?? '');
+  if (result.isBase64Encoded && result.body) {
+    res.end(Buffer.from(result.body, 'base64'));
+  } else {
+    res.end(result.body ?? '');
+  }
 }
 
 export async function runVercelApi(req, res, subPath) {

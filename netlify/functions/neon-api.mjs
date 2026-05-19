@@ -266,6 +266,75 @@ export async function handleNeon(event, { json, empty204, getPathname, getSearch
       return json(200, rows.map(mapCategory));
     }
 
+    const catId = pathname.match(/^\/?categories\/(\d+)$/);
+
+    if (method === 'GET' && catId) {
+      const id = Number(catId[1]);
+      const rows = await db`
+        SELECT c."Id", c."Name", c."Description", c."Icon",
+          COUNT(b."Id") FILTER (WHERE b."IsApproved" = true)::int AS business_count
+        FROM "Categories" c
+        LEFT JOIN "Businesses" b ON b."CategoryId" = c."Id"
+        WHERE c."Id" = ${id}
+        GROUP BY c."Id", c."Name", c."Description", c."Icon"
+        LIMIT 1`;
+      if (!rows[0]) return json(404, { message: 'Category not found.' });
+      return json(200, mapCategory(rows[0]));
+    }
+
+    if (method === 'POST' && pathname === '/categories') {
+      if (!(await verifyAuth(event))) return json(401, { message: 'Unauthorized' });
+      const name = String(body.name ?? '').trim();
+      if (!name) return json(400, { message: 'Category name is required.' });
+      const existing = await db`SELECT "Id" FROM "Categories" WHERE LOWER("Name") = LOWER(${name}) LIMIT 1`;
+      if (existing[0]) return json(400, { message: 'A category with this name already exists.' });
+      const rows = await db`
+        INSERT INTO "Categories" ("Name", "Description", "Icon")
+        VALUES (${name}, ${body.description?.trim() || null}, ${body.icon?.trim() || null})
+        RETURNING "Id"`;
+      const created = await db`
+        SELECT c."Id", c."Name", c."Description", c."Icon",
+          0::int AS business_count
+        FROM "Categories" c WHERE c."Id" = ${rows[0].Id} LIMIT 1`;
+      return json(201, mapCategory(created[0]));
+    }
+
+    if (method === 'PUT' && catId) {
+      if (!(await verifyAuth(event))) return json(401, { message: 'Unauthorized' });
+      const id = Number(catId[1]);
+      const exists = await db`SELECT "Id" FROM "Categories" WHERE "Id" = ${id} LIMIT 1`;
+      if (!exists[0]) return json(404, { message: 'Category not found.' });
+      const name = String(body.name ?? '').trim();
+      if (!name) return json(400, { message: 'Category name is required.' });
+      const conflict = await db`SELECT "Id" FROM "Categories" WHERE LOWER("Name") = LOWER(${name}) AND "Id" != ${id} LIMIT 1`;
+      if (conflict[0]) return json(400, { message: 'A category with this name already exists.' });
+      await db`
+        UPDATE "Categories" SET
+          "Name" = ${name},
+          "Description" = ${body.description?.trim() || null},
+          "Icon" = ${body.icon?.trim() || null}
+        WHERE "Id" = ${id}`;
+      const rows = await db`
+        SELECT c."Id", c."Name", c."Description", c."Icon",
+          COUNT(b."Id") FILTER (WHERE b."IsApproved" = true)::int AS business_count
+        FROM "Categories" c
+        LEFT JOIN "Businesses" b ON b."CategoryId" = c."Id"
+        WHERE c."Id" = ${id}
+        GROUP BY c."Id", c."Name", c."Description", c."Icon"
+        LIMIT 1`;
+      return json(200, mapCategory(rows[0]));
+    }
+
+    if (method === 'DELETE' && catId) {
+      if (!(await verifyAuth(event))) return json(401, { message: 'Unauthorized' });
+      const id = Number(catId[1]);
+      const inUse = await db`SELECT COUNT(*)::int AS c FROM "Businesses" WHERE "CategoryId" = ${id} LIMIT 1`;
+      if ((inUse[0]?.c ?? 0) > 0) return json(400, { message: 'Cannot delete — category has businesses assigned to it.' });
+      const rows = await db`DELETE FROM "Categories" WHERE "Id" = ${id} RETURNING "Id"`;
+      if (!rows[0]) return json(404, { message: 'Category not found.' });
+      return { statusCode: 204, headers: { 'access-control-allow-origin': '*' }, body: '' };
+    }
+
     if (method === 'GET' && pathname === '/businesses') {
       const admin = sp.get('admin') === 'true';
       if (admin && !(await verifyAuth(event))) return json(401, { message: 'Unauthorized' });
