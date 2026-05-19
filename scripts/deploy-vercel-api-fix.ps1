@@ -25,8 +25,7 @@ $vercelJson = @'
     { "source": "/api/businesses/search", "destination": "/_data/search.json" },
     { "source": "/api/dashboard/stats", "destination": "/_data/stats.json" },
     { "source": "/api/businesses", "destination": "/_data/businesses.json" },
-    { "handle": "filesystem" },
-    { "source": "/(.*)", "destination": "/index.html" }
+    { "source": "/((?!api/|_data/).*)", "destination": "/index.html" }
   ]
 }
 '@
