@@ -114,6 +114,7 @@ export const translations = {
       emptyTitle: 'No businesses found',
       emptyMessage: 'Try another name, category, or city — or clear filters to see all listings.',
       clearFilters: 'Clear filters',
+      loadError: 'Could not load businesses. Check that the API is running, then refresh.',
     },
     contact: {
       title: 'Contact Us',
@@ -409,6 +410,7 @@ export const translations = {
       emptyTitle: 'Ganacsi lama helin',
       emptyMessage: 'Isku day magac, qayb, ama magaalo kale — ama nadiifi si aad dhammaan u aragto.',
       clearFilters: 'Nadiifi shaandhada',
+      loadError: 'Ganacsiyada lama soo rari karo. Hubi in API-ku socdo, ka dibna cusbooneysii bogga.',
     },
     contact: {
       title: 'Nala soo xiriir',

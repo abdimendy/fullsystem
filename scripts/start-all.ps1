@@ -63,9 +63,16 @@ if (-not $apiHealthy) {
     '-NoExit', '-Command',
     "cd '$apiPath'; `$env:DATABASE_URL='$env:DATABASE_URL'; `$env:ASPNETCORE_ENVIRONMENT='Development'; `$env:ENABLE_SWAGGER='true'; dotnet run --launch-profile http"
   ) -WindowStyle Normal
-  Start-Sleep -Seconds 14
+  for ($i = 0; $i -lt 40; $i++) {
+    Start-Sleep -Seconds 2
+    if (Test-PortUp 'http://localhost:5261/api/health') { break }
+  }
 } else {
   Write-Host 'API already running on :5261' -ForegroundColor Green
+}
+
+if (-not (Test-PortUp 'http://localhost:5261/api/health')) {
+  Write-Host 'Warning: API not ready on :5261 — start it manually or wait and refresh the browser.' -ForegroundColor Yellow
 }
 
 if (-not (Test-PortUp 'http://localhost:5175/')) {

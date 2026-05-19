@@ -5,6 +5,7 @@ import toast from 'react-hot-toast';
 import { HiSearch } from 'react-icons/hi';
 import { businessApi } from '../api/businessApi';
 import { categoryApi } from '../api/categoryApi';
+import { isUsingBundledPublicApi } from '../api/configureApi';
 import BusinessCard from '../components/BusinessCard';
 import EmptyState from '../components/EmptyState';
 import Pagination from '../components/Pagination';
@@ -61,15 +62,20 @@ export default function Businesses() {
       });
       setResults(normalizeSearchResponse(data, page, PAGE_SIZE));
     } catch {
-      const start = (page - 1) * PAGE_SIZE;
-      const items = demoBusinessList.slice(start, start + PAGE_SIZE);
-      setResults({
-        items,
-        totalCount: demoBusinessList.length,
-        page,
-        pageSize: PAGE_SIZE,
-        totalPages: Math.max(1, Math.ceil(demoBusinessList.length / PAGE_SIZE)),
-      });
+      if (isUsingBundledPublicApi()) {
+        const start = (page - 1) * PAGE_SIZE;
+        const items = demoBusinessList.slice(start, start + PAGE_SIZE);
+        setResults({
+          items,
+          totalCount: demoBusinessList.length,
+          page,
+          pageSize: PAGE_SIZE,
+          totalPages: Math.max(1, Math.ceil(demoBusinessList.length / PAGE_SIZE)),
+        });
+      } else {
+        toast.error(t('business.loadError'));
+        setResults({ items: [], totalCount: 0, page: 1, pageSize: PAGE_SIZE, totalPages: 1 });
+      }
     } finally {
       setLoading(false);
     }

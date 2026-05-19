@@ -99,7 +99,8 @@ export async function configureApi() {
     const prev = api.defaults.baseURL;
     api.defaults.baseURL = base;
     try {
-      const { data } = await api.get('/health', { timeout: 45000 });
+      const timeout = import.meta.env.DEV ? 4000 : 45000;
+      const { data } = await api.get('/health', { timeout });
       if (data?.status === 'healthy' || data?.status === 'degraded') {
         if (isHostedWithRelativeApi() && isDemoHealth(data)) {
           console.info('[YellowBook API] free static API at', label, data?.provider || '');
@@ -123,9 +124,24 @@ export async function configureApi() {
     return false;
   };
 
-  let live = await tryHealth('primary', baseURL);
+  let live = false;
+  if (import.meta.env.DEV && baseURL === '/api') {
+    console.info('[YellowBook API] Waiting for local API (http://localhost:5261)…');
+    for (let attempt = 0; attempt < 25; attempt++) {
+      live = await tryHealth(attempt === 0 ? 'primary' : `local-retry-${attempt}`, baseURL);
+      if (live) break;
+      await new Promise((r) => setTimeout(r, 1200));
+    }
+  } else {
+    live = await tryHealth('primary', baseURL);
+  }
 
-  if (!live && !isHostedWithRelativeApi() && isUsableExternalApiUrl(normalizeApiUrl(DEFAULT_PRODUCTION_API_ORIGIN))) {
+  if (
+    !live &&
+    !import.meta.env.DEV &&
+    !isHostedWithRelativeApi() &&
+    isUsableExternalApiUrl(normalizeApiUrl(DEFAULT_PRODUCTION_API_ORIGIN))
+  ) {
     const renderBase = normalizeApiUrl(DEFAULT_PRODUCTION_API_ORIGIN);
     if (renderBase && renderBase !== baseURL) {
       live = await tryHealth('render-live', renderBase);
@@ -149,4 +165,8 @@ export async function configureApi() {
   }
 
   return baseURL;
+}
+
+export function isUsingBundledPublicApi() {
+  return Boolean(api.defaults.useBundledPublicApi);
 }

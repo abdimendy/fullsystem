@@ -8,9 +8,13 @@ import { LanguageProvider } from './context/LanguageContext';
 import { configureApi } from './api/configureApi';
 
 async function bootstrap() {
+  const rootEl = document.getElementById('root');
+  rootEl.innerHTML =
+    '<p style="margin:0;padding:2rem;text-align:center;font-family:system-ui,sans-serif;color:#334155">Loading YellowBook…</p>';
+
   await configureApi();
 
-  createRoot(document.getElementById('root')).render(
+  createRoot(rootEl).render(
     <StrictMode>
       <ThemeProvider>
         <LanguageProvider>

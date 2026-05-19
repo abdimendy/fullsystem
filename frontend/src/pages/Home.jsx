@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { businessApi } from '../api/businessApi';
 import { categoryApi } from '../api/categoryApi';
 import { dashboardApi } from '../api/dashboardApi';
+import { isUsingBundledPublicApi } from '../api/configureApi';
 import HeroSection from '../components/home/HeroSection';
 import TrustBar from '../components/home/TrustBar';
 import SearchSection from '../components/home/SearchSection';
@@ -26,16 +27,22 @@ export default function Home() {
     categoryApi
       .getAll()
       .then((r) => setCategories(ensureArray(r.data)))
-      .catch(() => setCategories(demoCategories));
+      .catch(() => {
+        if (isUsingBundledPublicApi()) setCategories(demoCategories);
+      });
     businessApi
       .getFeatured(6)
       .then((r) => setFeatured(ensureArray(r.data)))
-      .catch(() => setFeatured(demoBusinessList.slice(0, 6)))
+      .catch(() => {
+        if (isUsingBundledPublicApi()) setFeatured(demoBusinessList.slice(0, 6));
+      })
       .finally(() => setLoadingFeatured(false));
     dashboardApi
       .getStats()
       .then((r) => setStats(r.data))
-      .catch(() => setStats(demoStats));
+      .catch(() => {
+        if (isUsingBundledPublicApi()) setStats(demoStats);
+      });
   }, []);
 
   return (

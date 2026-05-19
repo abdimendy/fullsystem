@@ -44,6 +44,7 @@ export default defineConfig({
         target: 'http://localhost:5261',
         changeOrigin: true,
         secure: false,
+        timeout: 60000,
       },
     },
   },

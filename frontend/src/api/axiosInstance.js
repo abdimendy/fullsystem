@@ -153,7 +153,11 @@ api.interceptors.response.use(
       return Promise.reject(error);
     }
 
-    if (shouldUseDemoFallback(error)) {
+    const requestPath = (error.config?.url || '').split('?')[0];
+    const skipDemoForLiveBusinessDetail =
+      /^\/businesses\/\d+$/.test(requestPath) && !api.defaults.useBundledPublicApi;
+
+    if (!skipDemoForLiveBusinessDetail && shouldUseDemoFallback(error)) {
       const demo = getDemoResponse(error.config);
       if (demo !== null) {
         return Promise.resolve({
@@ -165,6 +169,15 @@ api.interceptors.response.use(
           demoMode: true,
         });
       }
+    }
+
+    const status = error.response?.status;
+    const handledByDemo =
+      !skipDemoForLiveBusinessDetail &&
+      shouldUseDemoFallback(error) &&
+      getDemoResponse(error.config) !== null;
+    if ((status === 404 || status === 502 || status === 503) && !handledByDemo) {
+      console.error('[YellowBook API]', status, fullRequestUrl(error.config || {}), error.response?.data);
     }
 
     if (error.response?.status === 401) {
@@ -182,11 +195,6 @@ api.interceptors.response.use(
           window.location.href = `/login?from=${encodeURIComponent(window.location.pathname)}`;
         }
       }
-    }
-
-    const status = error.response?.status;
-    if (status === 404 || status === 502 || status === 503) {
-      console.error('[YellowBook API]', status, fullRequestUrl(error.config || {}), error.response?.data);
     }
 
     const message =

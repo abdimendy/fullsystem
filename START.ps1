@@ -34,9 +34,15 @@ if ($apiUp -and $apiNew -and $feUp) {
 
 & (Join-Path $root 'scripts\start-all.ps1')
 
-for ($i = 0; $i -lt 30; $i++) {
+for ($i = 0; $i -lt 40; $i++) {
   Start-Sleep -Seconds 2
-  if (Test-PortUp 'http://localhost:5175/') { break }
+  $apiOk = Test-PortUp 'http://localhost:5261/api/health'
+  $feOk = Test-PortUp 'http://localhost:5175/'
+  if ($apiOk -and $feOk) { break }
+}
+
+if (-not (Test-PortUp 'http://localhost:5261/api/health')) {
+  Write-Host 'API still starting — refresh http://localhost:5175 in a few seconds if data does not load.' -ForegroundColor Yellow
 }
 
 Start-Process 'http://localhost:5175'
