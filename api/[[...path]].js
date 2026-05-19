@@ -87,7 +87,7 @@ function paginate(list, page = 1, pageSize = 12) {
   return { items: list.slice((p - 1) * size, p * size), totalCount, page: p, pageSize: size, totalPages: Math.max(1, Math.ceil(totalCount / size)) };
 }
 
-function handleDemo(req, res) {
+async function handleDemo(req, res) {
   const pathname = getPathname(req);
   const sp = getSearchParams(req);
   const method = (req.method || "GET").toUpperCase();
@@ -101,6 +101,36 @@ function handleDemo(req, res) {
   if (method === "GET" && pathname === "/dashboard") return send(res, 200, demoStats);
   if (method === "GET" && pathname === "/payments") return send(res, 200, []);
   if (method === "GET" && pathname === "/reviews") return send(res, 200, demoReviews);
+  if (method === "GET" && pathname === "/businesses/pending") return send(res, 200, []);
+
+  if (method === "POST" && pathname === "/auth/login") {
+    let body = {};
+    try {
+      const buf = await readBody(req);
+      body = JSON.parse(buf?.length ? buf.toString("utf8") : "{}");
+    } catch { /* empty */ }
+    const user = String(body.username ?? body.Username ?? "").trim().toLowerCase();
+    const pass = String(body.password ?? body.Password ?? "");
+    if (user === "admin" && pass === "Admin@123") {
+      const expiresAt = new Date(Date.now() + 8 * 60 * 60 * 1000).toISOString();
+      return send(res, 200, {
+        token: `demo.${Buffer.from(user).toString("base64")}`,
+        username: "admin",
+        expiresAt,
+      });
+    }
+    return send(res, 401, { message: "Invalid username or password." });
+  }
+
+  if (method === "GET" && pathname === "/auth/me") {
+    const auth = req.headers.authorization || "";
+    if (!auth.startsWith("Bearer ")) return send(res, 401, { message: "Unauthorized" });
+    const token = auth.slice(7);
+    if (token.startsWith("demo.") || token.startsWith("offline.")) {
+      return send(res, 200, { username: "admin" });
+    }
+    return send(res, 401, { message: "Unauthorized" });
+  }
 
   const biz = pathname.match(/^\/businesses\/(\d+)$/);
   if (method === "GET" && biz) {
@@ -169,5 +199,5 @@ export default async function handler(req, res) {
   const proxied = await proxyToBackend(req, res);
   if (proxied) return;
 
-  handleDemo(req, res);
+  await handleDemo(req, res);
 }

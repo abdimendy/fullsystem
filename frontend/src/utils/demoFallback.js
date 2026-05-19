@@ -91,8 +91,9 @@ export function getDemoResponse(config) {
 
   if (path === '/dashboard/stats' || path === '/dashboard') return demoStats;
 
-  // Never fake login — must hit real API + PostgreSQL
-  if (path.startsWith('/auth/')) return null;
+  if (path === '/payments') return [];
+
+  if (path === '/businesses/pending') return [];
 
   return null;
 }
@@ -108,7 +109,9 @@ function isPublicGetUrl(url) {
     path.startsWith('/reviews/business/') ||
     path === '/dashboard/stats' ||
     path === '/dashboard' ||
-    path === '/health'
+    path === '/health' ||
+    path === '/payments' ||
+    path === '/businesses/pending'
   );
 }
 

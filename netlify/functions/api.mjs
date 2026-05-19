@@ -49,6 +49,8 @@ function json(status, data) {
 }
 
 function getPathname(event) {
+  const splat = event.pathParameters?.splat ?? event.pathParameters?.proxy;
+  if (splat) return `/${String(splat).replace(/^\/+/, '')}`;
   const raw = event.rawUrl || event.path || '';
   try {
     const pathname = raw.startsWith('http') ? new URL(raw).pathname : raw;
@@ -57,6 +59,16 @@ function getPathname(event) {
     return pathname.replace(/^\/api/, '') || '/';
   } catch {
     return '/';
+  }
+}
+
+function parseBody(event) {
+  if (!event.body) return {};
+  try {
+    const raw = event.isBase64Encoded ? Buffer.from(event.body, 'base64').toString('utf8') : event.body;
+    return JSON.parse(raw);
+  } catch {
+    return {};
   }
 }
 
@@ -99,6 +111,32 @@ function handleDemo(event) {
   if (method === 'GET' && pathname === '/dashboard') return json(200, demoStats);
   if (method === 'GET' && pathname === '/payments') return json(200, []);
   if (method === 'GET' && pathname === '/reviews') return json(200, demoReviews);
+  if (method === 'GET' && pathname === '/businesses/pending') return json(200, []);
+
+  if (method === 'POST' && pathname === '/auth/login') {
+    const body = parseBody(event);
+    const user = String(body.username ?? body.Username ?? '').trim().toLowerCase();
+    const pass = String(body.password ?? body.Password ?? '');
+    if (user === 'admin' && pass === 'Admin@123') {
+      const expiresAt = new Date(Date.now() + 8 * 60 * 60 * 1000).toISOString();
+      return json(200, {
+        token: `demo.${Buffer.from(user).toString('base64')}`,
+        username: 'admin',
+        expiresAt,
+      });
+    }
+    return json(401, { message: 'Invalid username or password.' });
+  }
+
+  if (method === 'GET' && pathname === '/auth/me') {
+    const auth = event.headers?.authorization || event.headers?.Authorization || '';
+    if (!auth.startsWith('Bearer ')) return json(401, { message: 'Unauthorized' });
+    const token = auth.slice(7);
+    if (token.startsWith('demo.') || token.startsWith('offline.')) {
+      return json(200, { username: 'admin' });
+    }
+    return json(401, { message: 'Unauthorized' });
+  }
 
   const biz = pathname.match(/^\/businesses\/(\d+)$/);
   if (method === 'GET' && biz) {
