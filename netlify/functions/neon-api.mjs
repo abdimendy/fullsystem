@@ -4,6 +4,7 @@ import { neon } from '@neondatabase/serverless';
 import bcrypt from 'bcryptjs';
 import { SignJWT, jwtVerify } from 'jose';
 import { handleUpload } from './neon-upload.mjs';
+import { handlePdf } from './neon-pdf.mjs';
 
 const JWT_DEFAULT = 'YellowBook-Super-Secret-Key-Change-In-Production-2026!';
 
@@ -221,6 +222,9 @@ export async function handleNeon(event, { json, empty204, getPathname, getSearch
   try {
     const uploadRes = await handleUpload(event, { json, verifyAuth, getPathname });
     if (uploadRes) return uploadRes;
+
+    const pdfRes = await handlePdf(event, { getPathname, getSearchParams, db });
+    if (pdfRes) return pdfRes;
 
     const bizId = pathname.match(/^\/?businesses\/(\d+)$/);
 
