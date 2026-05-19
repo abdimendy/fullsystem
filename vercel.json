@@ -2,19 +2,6 @@
   "buildCommand": "npm run vercel-build",
   "outputDirectory": "frontend/dist",
   "rewrites": [
-    { "source": "/api/health", "destination": "/_data/health.json" },
-    { "source": "/api/categories", "destination": "/_data/categories.json" },
-    { "source": "/api/businesses/featured", "destination": "/_data/featured.json" },
-    { "source": "/api/businesses/search", "destination": "/_data/search.json" },
-    { "source": "/api/businesses/pending", "destination": "/_data/pending.json" },
-    { "source": "/api/businesses/:id", "destination": "/_data/business-:id.json" },
-    { "source": "/api/businesses", "destination": "/_data/businesses.json" },
-    { "source": "/api/dashboard/stats", "destination": "/_data/stats.json" },
-    { "source": "/api/dashboard", "destination": "/_data/stats.json" },
-    { "source": "/api/payments", "destination": "/_data/payments.json" },
-    { "source": "/api/reviews", "destination": "/_data/reviews.json" },
-    { "source": "/api/analytics/summary", "destination": "/_data/analytics-summary.json" },
-    { "source": "/api/upload/status", "destination": "/_data/upload-status.json" },
-    { "source": "/(.*)", "destination": "/index.html" }
+    { "source": "/((?!api/).*)", "destination": "/index.html" }
   ]
 }

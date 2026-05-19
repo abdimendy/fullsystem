@@ -1,6 +1,8 @@
-import { route } from '../_lib/handler.js';
+import { apiConfig, runVercelApi } from '../_vercel.mjs';
+
+export const config = apiConfig;
 
 export default async function handler(req, res) {
   const id = req.query.id;
-  return route(`/businesses/${id}`)(req, res);
+  return runVercelApi(req, res, `businesses/${id}`);
 }
