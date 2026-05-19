@@ -11,9 +11,10 @@ function normalizeApiUrl(url) {
   return trimmed.endsWith('/api') ? trimmed : `${trimmed}/api`;
 }
 
-function isVercelHost() {
+/** Vercel / Netlify: use relative /api (functions + static _data), same as localhost proxy. */
+function isHostedWithRelativeApi() {
   if (typeof window === 'undefined') return false;
-  return /vercel\.app$/i.test(window.location.hostname);
+  return /(vercel|netlify)\.app$/i.test(window.location.hostname);
 }
 
 function isUsableExternalApiUrl(url) {
@@ -35,8 +36,8 @@ export function resolveApiBaseUrl() {
 
   const envTrimmed = import.meta.env.VITE_API_URL && String(import.meta.env.VITE_API_URL).trim();
 
-  // Vercel: /api → serverless (demo data, or BACKEND_URL proxy) — same pattern as localhost
-  if (import.meta.env.PROD && isVercelHost()) {
+  // Vercel / Netlify: /api → serverless (demo data, or BACKEND_URL proxy) — same pattern as localhost
+  if (import.meta.env.PROD && isHostedWithRelativeApi()) {
     if (!envTrimmed || envTrimmed === '/api') return '/api';
     const normalized = normalizeApiUrl(envTrimmed);
     if (isUsableExternalApiUrl(normalized)) return normalized;
@@ -65,7 +66,7 @@ export async function configureApi() {
       if (res.ok) {
         const data = await res.json();
         const fromConfig = normalizeApiUrl(data.apiUrl);
-        if (fromConfig === '/api' && (isVercelHost() || import.meta.env.VITE_USE_RELATIVE_API === 'true')) {
+        if (fromConfig === '/api' && (isHostedWithRelativeApi() || import.meta.env.VITE_USE_RELATIVE_API === 'true')) {
           baseURL = '/api';
         } else if (isUsableExternalApiUrl(fromConfig)) {
           baseURL = fromConfig;
@@ -106,7 +107,7 @@ export async function configureApi() {
 
   let live = await tryHealth('primary', baseURL);
 
-  if (!live && isVercelHost() && baseURL === '/api') {
+  if (!live && isHostedWithRelativeApi() && baseURL === '/api') {
     const renderBase = normalizeApiUrl(DEFAULT_PRODUCTION_API_ORIGIN);
     if (renderBase && renderBase !== '/api') {
       live = await tryHealth('render', renderBase);
@@ -117,7 +118,7 @@ export async function configureApi() {
     }
   }
 
-  if (!live && (isVercelHost() || import.meta.env.DEV) && (baseURL === '/api' || import.meta.env.DEV)) {
+  if (!live && (isHostedWithRelativeApi() || import.meta.env.DEV) && (baseURL === '/api' || import.meta.env.DEV)) {
     api.defaults.useBundledPublicApi = true;
     const hint = import.meta.env.DEV
       ? 'Run .\\START.ps1 (or .\\scripts\\start-api-neon.ps1) for login + Neon database.'
