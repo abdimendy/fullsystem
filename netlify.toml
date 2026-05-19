@@ -30,7 +30,49 @@
   to = "/favicon.svg"
   status = 200
 
-# All API traffic → serverless proxy (BACKEND_URL) or demo fallback
+# GET API from build-time Neon export (works when function quota exceeded)
+[[redirects]]
+  from = "/api/health"
+  to = "/_data/live/health.json"
+  status = 200
+[[redirects]]
+  from = "/api/categories"
+  to = "/_data/live/categories.json"
+  status = 200
+[[redirects]]
+  from = "/api/businesses/featured"
+  to = "/_data/live/featured.json"
+  status = 200
+[[redirects]]
+  from = "/api/businesses/search"
+  to = "/_data/live/search.json"
+  status = 200
+[[redirects]]
+  from = "/api/businesses/pending"
+  to = "/_data/live/pending.json"
+  status = 200
+[[redirects]]
+  from = "/api/businesses/:id"
+  to = "/_data/live/business-:id.json"
+  status = 200
+[[redirects]]
+  from = "/api/businesses"
+  to = "/_data/live/businesses.json"
+  status = 200
+[[redirects]]
+  from = "/api/dashboard/stats"
+  to = "/_data/live/stats.json"
+  status = 200
+[[redirects]]
+  from = "/api/dashboard"
+  to = "/_data/live/stats.json"
+  status = 200
+[[redirects]]
+  from = "/api/payments"
+  to = "/_data/live/payments.json"
+  status = 200
+
+# POST/PUT and other routes → serverless (Neon live) when quota allows
 [[redirects]]
   from = "/api/*"
   to = "/.netlify/functions/api/:splat"

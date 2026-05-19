@@ -27,3 +27,6 @@ Thumbs.db
 *.db-shm
 *.db-wal
 .vercel
+
+# Local Netlify folder
+.netlify

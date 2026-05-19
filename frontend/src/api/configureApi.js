@@ -84,7 +84,8 @@ export async function configureApi() {
 
   const isDemoHealth = (data) => {
     const p = String(data?.provider || '').toLowerCase();
-    if (p.includes('neon') || p.includes('npgsql') || p.includes('render-live')) return false;
+    if (p.includes('neon') || p.includes('npgsql') || p.includes('render-live') || p.includes('static-live'))
+      return false;
     return (
       p.includes('demo') ||
       p.includes('static') ||
