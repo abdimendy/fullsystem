@@ -43,7 +43,7 @@ write('categories.json', demoCategories);
 write('businesses.json', demoBusinessList);
 write('featured.json', demoBusinessList.slice(0, 6));
 write('stats.json', demoStats);
-write('health.json', { status: 'healthy', database: true, provider: 'vercel-static' });
+write('health.json', { status: 'healthy', database: true, provider: 'netlify-static' });
 write('search.json', {
   items: demoBusinessList,
   totalCount: demoBusinessList.length,
@@ -51,5 +51,21 @@ write('search.json', {
   pageSize: 12,
   totalPages: 1,
 });
+write('payments.json', []);
+write('pending.json', []);
+write('reviews.json', []);
+write('analytics-summary.json', {
+  totalPageViews: 0,
+  totalBusinessViews: 0,
+  totalSearches: 0,
+  unreadMessages: 0,
+  pendingBusinesses: 0,
+  popularBusinesses: [],
+});
+write('upload-status.json', { cloudinary: false, local: true });
+
+for (const b of demoBusinessList) {
+  write(`business-${b.id}.json`, b);
+}
 
 console.log('Wrote public/_data/*.json');

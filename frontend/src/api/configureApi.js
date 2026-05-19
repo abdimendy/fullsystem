@@ -84,13 +84,13 @@ export async function configureApi() {
 
   const isDemoHealth = (data) => {
     const p = String(data?.provider || '').toLowerCase();
-    if (p.includes('neon') || p.includes('npgsql') || p.includes('render-live') || p.includes('static-live'))
-      return false;
+    if (p.includes('neon') || p.includes('npgsql') || p.includes('render-live')) return false;
     return (
       p.includes('demo') ||
       p.includes('static') ||
       p.includes('netlify-demo') ||
       p.includes('netlify-proxy') ||
+      p.includes('netlify-static') ||
       p.includes('vercel-static')
     );
   };
@@ -102,9 +102,9 @@ export async function configureApi() {
       const { data } = await api.get('/health', { timeout: 45000 });
       if (data?.status === 'healthy' || data?.status === 'degraded') {
         if (isHostedWithRelativeApi() && isDemoHealth(data)) {
-          console.info('[YellowBook API] demo/static only at', label, '— trying live Render API…');
-          api.defaults.baseURL = prev;
-          return false;
+          console.info('[YellowBook API] free static API at', label, data?.provider || '');
+          api.defaults.useBundledPublicApi = true;
+          return true;
         }
         console.info('[YellowBook API] health OK', label, data?.status, data?.provider || '');
         const t = localStorage.getItem('yellowbook_token');
@@ -125,7 +125,7 @@ export async function configureApi() {
 
   let live = await tryHealth('primary', baseURL);
 
-  if (!live && isHostedWithRelativeApi()) {
+  if (!live && !isHostedWithRelativeApi() && isUsableExternalApiUrl(normalizeApiUrl(DEFAULT_PRODUCTION_API_ORIGIN))) {
     const renderBase = normalizeApiUrl(DEFAULT_PRODUCTION_API_ORIGIN);
     if (renderBase && renderBase !== baseURL) {
       live = await tryHealth('render-live', renderBase);

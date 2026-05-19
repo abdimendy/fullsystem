@@ -69,13 +69,13 @@ export function AuthProvider({ children }) {
 
       if (isOfflineAdmin) {
         const expiresAt = new Date(Date.now() + 8 * 60 * 60 * 1000).toISOString();
-        persistSession(`offline.${btoa(username)}`, username.trim(), expiresAt);
+        persistSession(`demo.${btoa(username)}`, username.trim(), expiresAt);
         return {
           success: true,
           devFallback: true,
           message: import.meta.env.DEV
             ? 'Signed in offline. Start API: .\\scripts\\start-api-neon.ps1'
-            : 'Signed in offline. Run .\\scripts\\fix-vercel-online.ps1 for live API.',
+            : 'Signed in (free online mode). Browse works; live DB needs API later.',
         };
       }
 

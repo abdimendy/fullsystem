@@ -1,81 +1,70 @@
-# Yellow Book — Netlify (same as localhost:5175 → /api → live backend)
-# Base directory: EMPTY (repo root). Publish: frontend/dist (from build).
+# Yellow Book — FREE static hosting (no serverless functions = no usage quota)
+# Site: https://yellowbooksystem.netlify.app
 
 [build]
   command = "npm run build"
   publish = "frontend/dist"
-  functions = "netlify/functions"
 
 [build.environment]
   NODE_VERSION = "20"
-
-# Live API: set DATABASE_URL in Netlify (Neon) — same DB as localhost. No Render/card needed.
-# Optional: BACKEND_URL only if you deploy .NET API elsewhere.
-[context.production.environment]
-  JWT_KEY = "YellowBook-Super-Secret-Key-Change-In-Production-2026!"
-  AdminUser__Username = "admin"
-  AdminUser__Password = "Admin@123"
-
-[context.deploy-preview.environment]
-  JWT_KEY = "YellowBook-Super-Secret-Key-Change-In-Production-2026!"
-  AdminUser__Username = "admin"
-  AdminUser__Password = "Admin@123"
-
-[functions]
-  [functions.api]
-    timeout = 26
 
 [[redirects]]
   from = "/favicon.ico"
   to = "/favicon.svg"
   status = 200
 
-# GET API from build-time Neon export (works when function quota exceeded)
+# All GET /api → static JSON (zero function invocations)
 [[redirects]]
   from = "/api/health"
-  to = "/_data/live/health.json"
+  to = "/_data/health.json"
   status = 200
 [[redirects]]
   from = "/api/categories"
-  to = "/_data/live/categories.json"
+  to = "/_data/categories.json"
   status = 200
 [[redirects]]
   from = "/api/businesses/featured"
-  to = "/_data/live/featured.json"
+  to = "/_data/featured.json"
   status = 200
 [[redirects]]
   from = "/api/businesses/search"
-  to = "/_data/live/search.json"
+  to = "/_data/search.json"
   status = 200
 [[redirects]]
   from = "/api/businesses/pending"
-  to = "/_data/live/pending.json"
+  to = "/_data/pending.json"
   status = 200
 [[redirects]]
   from = "/api/businesses/:id"
-  to = "/_data/live/business-:id.json"
+  to = "/_data/business-:id.json"
   status = 200
 [[redirects]]
   from = "/api/businesses"
-  to = "/_data/live/businesses.json"
+  to = "/_data/businesses.json"
   status = 200
 [[redirects]]
   from = "/api/dashboard/stats"
-  to = "/_data/live/stats.json"
+  to = "/_data/stats.json"
   status = 200
 [[redirects]]
   from = "/api/dashboard"
-  to = "/_data/live/stats.json"
+  to = "/_data/stats.json"
   status = 200
 [[redirects]]
   from = "/api/payments"
-  to = "/_data/live/payments.json"
+  to = "/_data/payments.json"
   status = 200
-
-# POST/PUT and other routes → serverless (Neon live) when quota allows
 [[redirects]]
-  from = "/api/*"
-  to = "/.netlify/functions/api/:splat"
+  from = "/api/reviews"
+  to = "/_data/reviews.json"
+  status = 200
+[[redirects]]
+  from = "/api/analytics/summary"
+  to = "/_data/analytics-summary.json"
+  status = 200
+[[redirects]]
+  from = "/api/upload/status"
+  to = "/_data/upload-status.json"
   status = 200
 
 [[redirects]]
