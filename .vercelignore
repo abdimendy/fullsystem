@@ -1,3 +1,10 @@
-# Allow Vercel to upload built assets when needed; server build is primary.
-# Do not ignore frontend/dist for CLI uploads that skip remote build.
-!frontend/dist
+# Let vercel.json rewrites serve Neon static JSON from frontend/dist/_data
+api/[[...path]].js
+api/health.js
+api/businesses.js
+api/categories.js
+api/payments.js
+api/reviews.js
+api/businesses/
+api/dashboard/
+api/_lib/
