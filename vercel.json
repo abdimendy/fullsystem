@@ -1,5 +1,5 @@
 {
-  "buildCommand": "npm run build",
+  "buildCommand": "npm run vercel-build",
   "outputDirectory": "frontend/dist",
   "rewrites": [
     { "source": "/api/health", "destination": "/_data/health.json" },
