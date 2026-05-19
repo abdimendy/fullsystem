@@ -2,6 +2,11 @@ import { mkdirSync, writeFileSync } from 'fs';
 import { dirname, join } from 'path';
 import { fileURLToPath } from 'url';
 
+if (process.env.DATABASE_URL?.trim()) {
+  console.log('[write-api-static] DATABASE_URL set — keeping Neon export in public/_data');
+  process.exit(0);
+}
+
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 const outDir = join(root, 'public', '_data');
 mkdirSync(outDir, { recursive: true });

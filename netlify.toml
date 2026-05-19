@@ -2,7 +2,7 @@
 # Site: https://yellowbooksystem.netlify.app
 
 [build]
-  command = "npm run build"
+  command = "npm run netlify-build"
   publish = "frontend/dist"
 
 [build.environment]
