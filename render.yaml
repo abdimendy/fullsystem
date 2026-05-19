@@ -1,26 +1,21 @@
-# Deploy API on https://render.com (free tier)
-# 1. Push repo to GitHub
-# 2. Render → New → Blueprint → connect repo
-# 3. Add env: FRONTEND_URL = your Vercel URL (after frontend deploy)
+# Yellow Book API — deploy: https://render.com/deploy?repo=https://github.com/abdimendy/fullsystem
+# After deploy: set DATABASE_URL (Neon) + AdminUser__Password in Render dashboard.
 
 services:
   - type: web
     name: yellowbook-api
     runtime: docker
+    plan: free
+    region: frankfurt
     dockerfilePath: ./backend/YellowBook.API/Dockerfile
+    healthCheckPath: /api/health
     envVars:
       - key: ASPNETCORE_ENVIRONMENT
         value: Production
-      # Optional: Neon/Supabase web Postgres (overrides Render DB when set)
       - key: DATABASE_URL
         sync: false
-      - key: ConnectionStrings__DefaultConnection
-        fromDatabase:
-          name: yellowbook-db
-          property: connectionString
       - key: ENABLE_SWAGGER
         value: "true"
-      # Netlify + Vercel (also allowed via *.netlify.app / *.vercel.app in Program.cs)
       - key: FRONTEND_URL
         value: https://yellowbooksystem.netlify.app
       - key: Cors__AllowedOrigins
@@ -37,9 +32,3 @@ services:
         sync: false
       - key: CLOUDINARY_URL
         sync: false
-
-databases:
-  - name: yellowbook-db
-    plan: free
-    databaseName: yellowbook
-    user: yellowbook

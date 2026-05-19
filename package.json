@@ -8,6 +8,7 @@
   "scripts": {
     "build": "npm install --prefix frontend && npm run build --prefix frontend",
     "vercel-build": "npm install --prefix frontend && npm run build --prefix frontend",
-    "netlify-build": "npm install --prefix frontend && npm run build --prefix frontend"
+    "netlify-build": "npm install --prefix frontend && npm run build --prefix frontend",
+    "setup-render": "powershell -NoProfile -ExecutionPolicy Bypass -File ./scripts/setup-render.ps1"
   }
 }

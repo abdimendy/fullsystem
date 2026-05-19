@@ -8,6 +8,6 @@ RUN dotnet publish -c Release -o /app/publish
 FROM mcr.microsoft.com/dotnet/aspnet:10.0
 WORKDIR /app
 COPY --from=build /app/publish .
-ENV ASPNETCORE_URLS=http://+:8080
+# Render injects PORT at runtime (often 10000); local Docker defaults to 8080.
 EXPOSE 8080
-ENTRYPOINT ["dotnet", "YellowBook.API.dll"]
+ENTRYPOINT ["/bin/sh", "-c", "export ASPNETCORE_URLS=http://0.0.0.0:${PORT:-8080}; exec dotnet YellowBook.API.dll"]
