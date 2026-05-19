@@ -3,7 +3,8 @@
 export const config = apiConfig;
 
 export default async function handler(req, res) {
-  const parts = req.query.path;
-  const subPath = Array.isArray(parts) ? parts.join('/') : (parts ?? '');
+  const host = req.headers.host || 'localhost';
+  const proto = req.headers['x-forwarded-proto'] || 'https';
+  const subPath = new URL(req.url || '/', `${proto}://${host}`).pathname.replace(/^\/api\/?/i, '');
   return runVercelApi(req, res, subPath);
 }
