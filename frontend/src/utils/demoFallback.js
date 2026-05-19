@@ -106,12 +106,6 @@ export function getDemoResponse(config) {
     };
   }
 
-  const bizMatch = path.match(/^\/businesses\/(\d+)$/);
-  if (bizMatch) {
-    const id = Number(bizMatch[1]);
-    return demoBusinessList.find((b) => b.id === id) ?? null;
-  }
-
   return null;
 }
 
