@@ -66,6 +66,10 @@ function bundledAdapter(config) {
 
 api.interceptors.request.use((config) => {
   const method = (config.method || 'get').toLowerCase();
+  const requestPath = (config.url || '').split('?')[0];
+  if (config.skipDemoFallback || requestPath.startsWith('/pdf/')) {
+    config.adapter = undefined;
+  }
   if (method !== 'get' && method !== 'head' && isOfflineToken()) {
     return Promise.reject({
       friendlyMessage: mutationBlockedMessage(),
@@ -73,7 +77,12 @@ api.interceptors.request.use((config) => {
     });
   }
 
-  if (api.defaults.useBundledPublicApi && (method === 'get' || method === 'head')) {
+  if (
+    api.defaults.useBundledPublicApi &&
+    (method === 'get' || method === 'head') &&
+    !config.skipDemoFallback &&
+    !requestPath.startsWith('/pdf/')
+  ) {
     const demo = getDemoResponse(config);
     if (demo !== null) {
       config.adapter = bundledAdapter;
@@ -183,11 +192,12 @@ api.interceptors.response.use(
     if (error.response?.status === 401) {
       const isLogin = error.config?.url?.includes('/auth/login');
       const requestPath = error.config?.url?.split('?')[0] || '';
+      const isPdfDownload = requestPath.startsWith('/pdf/');
       const isPublicRead =
         (error.config?.method || 'get').toLowerCase() === 'get' &&
         PUBLIC_GET_PREFIXES.some((p) => requestPath === p || requestPath.startsWith(`${p}/`));
 
-      if (!isLogin && !isPublicRead && !isOfflineToken()) {
+      if (!isLogin && !isPublicRead && !isPdfDownload && !isOfflineToken()) {
         localStorage.removeItem('yellowbook_token');
         localStorage.removeItem('yellowbook_user');
         localStorage.removeItem('yellowbook_expires');

@@ -1,6 +1,7 @@
 /** Netlify serverless /api — Neon (DATABASE_URL), Render proxy, or demo fallback. */
 
 import { handleNeon } from './neon-api.mjs';
+import { handlePdf } from './neon-pdf.mjs';
 
 const U = (id) => `https://images.unsplash.com/photo-${id}?w=800&h=400&fit=crop&q=80`;
 
@@ -124,10 +125,18 @@ function paginate(list, page = 1, pageSize = 12) {
   return { items: list.slice((p - 1) * size, p * size), totalCount, page: p, pageSize: size, totalPages: Math.max(1, Math.ceil(totalCount / size)) };
 }
 
-function handleDemo(event) {
+async function handleDemo(event) {
   const pathname = getPathname(event);
   const sp = getSearchParams(event);
   const method = (event.httpMethod || 'GET').toUpperCase();
+
+  const pdfRes = await handlePdf(event, {
+    getPathname,
+    getSearchParams,
+    db: null,
+    demoBusinessList,
+  });
+  if (pdfRes) return pdfRes;
 
   if (method === 'GET' && pathname === '/health') {
     return json(200, {
@@ -213,8 +222,9 @@ async function proxyToBackend(event) {
   const target = `${backend}/api${pathname}${qs ? `?${qs}` : ''}`;
   const method = (event.httpMethod || 'GET').toUpperCase();
   const body = requestBody(event);
+  const isPdfRoute = pathname.startsWith('/pdf/');
 
-  const headers = { accept: 'application/json' };
+  const headers = { accept: isPdfRoute ? 'application/pdf,*/*' : 'application/json' };
   if (event.headers?.authorization) headers.authorization = event.headers.authorization;
   if (event.headers?.['content-type']) headers['content-type'] = event.headers['content-type'];
 
@@ -226,12 +236,33 @@ async function proxyToBackend(event) {
         body,
         signal: AbortSignal.timeout(25000),
       });
+      const contentType = upstream.headers.get('content-type') || '';
+      const isPdf =
+        isPdfRoute ||
+        contentType.includes('application/pdf') ||
+        contentType.includes('application/octet-stream');
+
+      if (upstream.ok && isPdf) {
+        const buffer = Buffer.from(await upstream.arrayBuffer());
+        return {
+          statusCode: upstream.status,
+          headers: {
+            'content-type': contentType || 'application/pdf',
+            'content-disposition': upstream.headers.get('content-disposition') || 'attachment',
+            'access-control-allow-origin': '*',
+            'cache-control': 'no-store',
+          },
+          body: buffer.toString('base64'),
+          isBase64Encoded: true,
+        };
+      }
+
       const text = await upstream.text();
       if (upstream.ok) {
         return {
           statusCode: upstream.status,
           headers: {
-            'content-type': upstream.headers.get('content-type') || 'application/json',
+            'content-type': contentType || 'application/json',
             'access-control-allow-origin': '*',
           },
           body: text,
@@ -282,5 +313,5 @@ export async function handler(event) {
   const proxied = await proxyToBackend(event);
   if (proxied) return proxied;
 
-  return handleDemo(event);
+  return await handleDemo(event);
 }

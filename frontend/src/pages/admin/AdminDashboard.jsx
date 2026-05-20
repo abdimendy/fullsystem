@@ -5,6 +5,7 @@ import { FaBuilding, FaCreditCard, FaExclamationTriangle, FaRedo, FaStar, FaTags
 import { dashboardApi } from '../../api/dashboardApi';
 import { paymentApi } from '../../api/paymentApi';
 import { pdfApi } from '../../api/pdfApi';
+import { useLanguage } from '../../context/LanguageContext';
 import LoadingSpinner from '../../components/LoadingSpinner';
 import EmptyState from '../../components/EmptyState';
 import { ensureArray } from '../../utils/apiHelpers';
@@ -20,7 +21,9 @@ const emptyStats = {
 };
 
 export default function AdminDashboard() {
+  const { t } = useLanguage();
   const [stats, setStats] = useState(null);
+  const [reportLoading, setReportLoading] = useState(false);
   const [payments, setPayments] = useState([]);
   const [loading, setLoading] = useState(true);
   const [apiError, setApiError] = useState(null);
@@ -66,11 +69,14 @@ export default function AdminDashboard() {
   }, [load]);
 
   const handleReport = async () => {
+    setReportLoading(true);
     try {
       await pdfApi.downloadReport();
-      toast.success('Report downloaded');
+      toast.success(t('admin.reportDownloaded'));
     } catch (err) {
-      toast.error(err.friendlyMessage || 'Failed to download report');
+      toast.error(err.friendlyMessage || t('admin.reportFailed'));
+    } finally {
+      setReportLoading(false);
     }
   };
 
@@ -128,9 +134,9 @@ export default function AdminDashboard() {
             type="button"
             onClick={handleReport}
             className="inline-flex items-center gap-2 rounded-xl bg-slate-900 px-5 py-3 text-sm font-bold text-white shadow-lg transition hover:bg-slate-800 disabled:opacity-50"
-            disabled={!!apiError}
+            disabled={reportLoading}
           >
-            Download Report PDF
+            {reportLoading ? '…' : t('admin.downloadReport')}
           </button>
         </div>
       </div>

@@ -16,7 +16,7 @@ const dark = rgb(0.06, 0.09, 0.16);
 const body = rgb(0.2, 0.25, 0.33);
 const muted = rgb(0.39, 0.45, 0.55);
 
-function pdfResponse(buffer, filename) {
+export function pdfResponse(buffer, filename) {
   return {
     statusCode: 200,
     headers: {
@@ -45,7 +45,42 @@ function wrapText(text, maxLen = 90) {
   return lines.length ? lines : ['-'];
 }
 
-async function generateBusinessPdf(b) {
+export function toPdfBusinessRow(b) {
+  return {
+    Name: b.name ?? b.Name,
+    Phone: b.phone ?? b.Phone,
+    Email: b.email ?? b.Email,
+    Address: b.address ?? b.Address,
+    City: b.city ?? b.City,
+    Description: b.description ?? b.Description,
+    CategoryName: b.categoryName ?? b.CategoryName,
+    Website: b.website ?? b.Website,
+    Rating: b.rating ?? b.Rating,
+  };
+}
+
+function filterDemoForReport(list, { name, categoryId, city }) {
+  let out = [...list];
+  const n = name?.trim().toLowerCase();
+  if (n) {
+    out = out.filter(
+      (b) =>
+        String(b.name || b.Name || '').toLowerCase().includes(n) ||
+        String(b.description || b.Description || '').toLowerCase().includes(n),
+    );
+  }
+  if (categoryId) {
+    const cid = Number(categoryId);
+    out = out.filter((b) => Number(b.categoryId ?? b.CategoryId) === cid);
+  }
+  if (city?.trim()) {
+    const c = city.trim().toLowerCase();
+    out = out.filter((b) => String(b.city || b.City || '').toLowerCase().includes(c));
+  }
+  return out.map(toPdfBusinessRow);
+}
+
+export async function generateBusinessPdf(b) {
   const doc = await PDFDocument.create();
   const page = doc.addPage([595.28, 841.89]);
   const bold = await doc.embedFont(StandardFonts.HelveticaBold);
@@ -84,7 +119,7 @@ async function generateBusinessPdf(b) {
   return doc.save();
 }
 
-async function generateReportPdf(businesses) {
+export async function generateReportPdf(businesses) {
   const doc = await PDFDocument.create();
   const bold = await doc.embedFont(StandardFonts.HelveticaBold);
   const regular = await doc.embedFont(StandardFonts.Helvetica);
@@ -162,8 +197,8 @@ async function fetchReportList(db, { name, categoryId, city }) {
   );
 }
 
-export async function handlePdf(event, { getPathname, getSearchParams, db }) {
-  if (!db) return null;
+export async function handlePdf(event, { getPathname, getSearchParams, db, demoBusinessList }) {
+  if (!db && !demoBusinessList?.length) return null;
   const pathname = getPathname(event);
   const method = (event.httpMethod || 'GET').toUpperCase();
   if (method !== 'GET') return null;
@@ -172,7 +207,13 @@ export async function handlePdf(event, { getPathname, getSearchParams, db }) {
   if (bizPdf) {
     try {
       const id = Number(bizPdf[1]);
-      const b = await fetchBusiness(db, id);
+      let b = null;
+      if (db) {
+        b = await fetchBusiness(db, id);
+      } else {
+        const found = demoBusinessList.find((x) => Number(x.id ?? x.Id) === id);
+        b = found ? toPdfBusinessRow(found) : null;
+      }
       if (!b) {
         return {
           statusCode: 404,
@@ -195,11 +236,14 @@ export async function handlePdf(event, { getPathname, getSearchParams, db }) {
   if (pathname === '/pdf/report') {
     try {
       const sp = getSearchParams(event);
-      const list = await fetchReportList(db, {
+      const filters = {
         name: sp.get('name'),
         categoryId: sp.get('categoryId'),
         city: sp.get('city'),
-      });
+      };
+      const list = db
+        ? await fetchReportList(db, filters)
+        : filterDemoForReport(demoBusinessList, filters);
       const bytes = await generateReportPdf(list);
       return pdfResponse(bytes, 'yellowbook-directory.pdf');
     } catch (err) {
