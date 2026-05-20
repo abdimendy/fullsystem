@@ -99,6 +99,11 @@ api.interceptors.request.use((config) => {
 
 api.interceptors.response.use(
   (response) => {
+    const url = response.config?.url?.split('?')[0] || '';
+    if (response.config?.responseType === 'blob' || url.startsWith('/pdf/')) {
+      return response;
+    }
+
     if (isHtmlPayload(response)) {
       const method = (response.config?.method || 'get').toLowerCase();
       const fakeErr = { config: response.config, response };
@@ -124,7 +129,6 @@ api.interceptors.response.use(
       });
     }
 
-    const url = response.config?.url?.split('?')[0] || '';
     const method = (response.config?.method || 'get').toLowerCase();
     if (
       method === 'get' &&

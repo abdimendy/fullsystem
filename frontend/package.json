@@ -7,7 +7,7 @@
     "dev": "npx vite",
     "build": "npx vite build",
     "predev": "node scripts/extract-classes.mjs",
-    "prebuild": "node scripts/extract-classes.mjs && node scripts/write-api-static.mjs",
+    "prebuild": "node scripts/extract-classes.mjs && node scripts/write-api-static.mjs && node scripts/write-build-version.mjs",
     "lint": "eslint .",
     "preview": "vite preview"
   },

@@ -30,6 +30,34 @@ function isUsableExternalApiUrl(url) {
   return true;
 }
 
+const BUILD_SEEN_KEY = 'yellowbook_seen_build';
+const BUILD_RELOAD_KEY = 'yellowbook_reload_done';
+
+/** After deploy, reload once so users never keep a stale cached index.html / JS bundle. */
+async function ensureFreshBuild() {
+  if (import.meta.env.DEV || typeof window === 'undefined') return;
+  try {
+    const res = await fetch(`/version.json?t=${Date.now()}`, { cache: 'no-store' });
+    if (!res.ok) return;
+    const { build } = await res.json();
+    if (!build) return;
+
+    const seen = sessionStorage.getItem(BUILD_SEEN_KEY);
+    if (seen && seen !== build && !sessionStorage.getItem(BUILD_RELOAD_KEY)) {
+      sessionStorage.setItem(BUILD_RELOAD_KEY, '1');
+      sessionStorage.setItem(BUILD_SEEN_KEY, build);
+      window.location.reload();
+      await new Promise(() => {});
+    }
+    sessionStorage.removeItem(BUILD_RELOAD_KEY);
+    sessionStorage.setItem(BUILD_SEEN_KEY, build);
+  } catch {
+    /* non-fatal */
+  }
+}
+
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+
 export function resolveApiBaseUrl() {
   // Dev: Vite proxy → http://localhost:5261 (see vite.config.js)
   if (import.meta.env.DEV) return '/api';
@@ -58,6 +86,8 @@ export function resolveApiBaseUrl() {
 }
 
 export async function configureApi() {
+  await ensureFreshBuild();
+
   let baseURL = resolveApiBaseUrl();
 
   if (!import.meta.env.DEV) {
@@ -130,10 +160,24 @@ export async function configureApi() {
     for (let attempt = 0; attempt < 20; attempt++) {
       live = await tryHealth(attempt === 0 ? 'primary' : `local-retry-${attempt}`, baseURL);
       if (live) break;
-      await new Promise((r) => setTimeout(r, 800));
+      await sleep(800);
+    }
+  } else if (import.meta.env.PROD && isHostedWithRelativeApi() && baseURL === '/api') {
+    for (let attempt = 0; attempt < 5; attempt++) {
+      live = await tryHealth(attempt === 0 ? 'primary' : `hosted-retry-${attempt}`, baseURL);
+      if (live) break;
+      await sleep(1200);
     }
   } else {
     live = await tryHealth('primary', baseURL);
+  }
+
+  if (live && isHostedWithRelativeApi() && baseURL === '/api') {
+    try {
+      await api.get('/health', { timeout: 15000 });
+    } catch {
+      /* warm serverless */
+    }
   }
 
   if (

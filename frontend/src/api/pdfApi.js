@@ -17,29 +17,54 @@ async function isPdfPayload(data, headers, status) {
   return head === '%PDF';
 }
 
-async function fetchPdf(path, filename) {
+function isRetryablePdfError(err) {
+  if (!err) return false;
+  if (!err.response) return true;
+  const status = err.response.status;
+  return status === 502 || status === 503 || status === 504 || status === 429;
+}
+
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+
+async function fetchPdfOnce(path, filename) {
   let response;
   try {
     response = await api.get(path, {
       responseType: 'blob',
       timeout: 90000,
-      // Do not run JSON/demo interceptors that assume structured GET bodies
       skipDemoFallback: true,
     });
   } catch (err) {
     const blob = err.response?.data;
-    const message = blob instanceof Blob
-      ? await blobErrorMessage(blob, 'Could not generate PDF')
-      : err.friendlyMessage || 'Could not generate PDF';
-    throw { friendlyMessage: message };
+    const message =
+      blob instanceof Blob
+        ? await blobErrorMessage(blob, 'Could not generate PDF')
+        : err.friendlyMessage || 'Could not generate PDF';
+    const wrapped = { friendlyMessage: message, response: err.response, code: err.code };
+    throw wrapped;
   }
 
   const { data, headers, status } = response;
   if (!(await isPdfPayload(data, headers, status))) {
     const message = await blobErrorMessage(data, 'Could not generate PDF');
-    throw { friendlyMessage: message };
+    throw { friendlyMessage: message, response };
   }
   downloadBlob(data, filename);
+}
+
+async function fetchPdf(path, filename, maxAttempts = 3) {
+  let lastErr;
+  for (let attempt = 0; attempt < maxAttempts; attempt++) {
+    try {
+      await fetchPdfOnce(path, filename);
+      return;
+    } catch (err) {
+      lastErr = err;
+      if (!isRetryablePdfError(err) || attempt === maxAttempts - 1) throw err;
+      await sleep(1200 * (attempt + 1));
+    }
+  }
+  throw lastErr;
 }
 
 export const pdfApi = {
